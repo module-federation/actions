@@ -70690,16 +70690,6 @@ var gitCommitAll = (message) => __async(void 0, null, function* () {
   yield execaWithStreamLog("git", ["commit", "-m", message, "-n"]);
   yield execaWithStreamLog("git", ["status"]);
 });
-var gitCommitWithIgnore = (message, ignore) => __async(void 0, null, function* () {
-  const { stdout } = yield (0, import_utils.execa)("git", ["diff", "--name-only", "HEAD"]);
-  const files = stdout.split("\n");
-  for (const file of files) {
-    if (!ignore || !file.match(ignore)) {
-      yield execaWithStreamLog("git", ["add", file]);
-    }
-  }
-  yield execaWithStreamLog("git", ["commit", "-m", message]);
-});
 var gitPush = (_0, ..._1) => __async(void 0, [_0, ..._1], function* (branch, { force } = {}) {
   yield execaWithStreamLog(
     "git",
@@ -71230,6 +71220,12 @@ function getPackageInfo(packageName) {
   };
 }
 
+// src/types.ts
+var PublishTools = /* @__PURE__ */ ((PublishTools2) => {
+  PublishTools2["Changeset"] = "changeset";
+  return PublishTools2;
+})(PublishTools || {});
+
 // src/utils/release.ts
 var import_path7 = __toESM(require("path"));
 var writeNpmrc = () => __async(void 0, null, function* () {
@@ -71278,7 +71274,7 @@ var bumpCanaryVersion = (..._0) => __async(void 0, [..._0], function* (cwd = pro
   }
   const packageManager = yield getPackageManager(cwd);
   const params = ["run"];
-  if (tools === "modern" /* Modern */) {
+  if (tools === PublishTools.Modern) {
     params.push("bump");
   } else {
     params.push("changeset");
@@ -71299,11 +71295,11 @@ var deleteAllLocaleTag = (cwd) => __async(void 0, null, function* () {
     }
   }
 });
-var runRelease = (..._0) => __async(void 0, [..._0], function* (cwd = process.cwd(), tag, tools = "modern" /* Modern */) {
+var runRelease = (..._0) => __async(void 0, [..._0], function* (cwd = process.cwd(), tag, tools = PublishTools.Modern) {
   yield deleteAllLocaleTag(cwd);
   const packageManager = yield getPackageManager(cwd);
   const params = ["run"];
-  if (tools === "modern" /* Modern */) {
+  if (tools === PublishTools.Modern) {
     params.push("release");
   } else {
     params.push("changeset");
@@ -71312,7 +71308,7 @@ var runRelease = (..._0) => __async(void 0, [..._0], function* (cwd = process.cw
   if (tag) {
     params.push("--tag", tag);
   }
-  if (tools === "modern" /* Modern */) {
+  if (tools === PublishTools.Modern) {
     params.push("--no-git-checks");
   }
   console.info("[run release]", packageManager, params);
@@ -71350,7 +71346,7 @@ var release = () => __async(void 0, null, function* () {
   const publishVersion = core.getInput("version");
   const npmTag = core.getInput("npmTag");
   let publishBranch = core.getInput("branch");
-  const publishTools = core.getInput("tools") || "modern" /* Modern */;
+  const publishTools = core.getInput("tools");
   console.info("[publishVersion]:", publishVersion);
   console.info("[publishTools]:", publishTools);
   if (!githubToken) {
@@ -72334,20 +72330,6 @@ function runBumpVersion(_0, _1) {
     }
   });
 }
-function getReleaseNote(_0) {
-  return __async(this, arguments, function* (githubToken, cwd = process.cwd()) {
-    const packageManager = yield (0, import_utils7.getPackageManager)(cwd);
-    const { stdout } = yield (0, import_utils7.execa)(packageManager, ["run", "gen-release-note"], {
-      cwd,
-      env: {
-        GITHUB_AUTH_TOKEN: githubToken
-      }
-    });
-    const part1 = stdout.split("modern gen-release-note")[1];
-    const part2 = part1.split("\n").filter((v) => v);
-    return part2.slice(1).join("\n");
-  });
-}
 function getPreState(_0, _1) {
   return __async(this, arguments, function* (releaseType, tools, cwd = process.cwd()) {
     const packageManager = yield (0, import_utils7.getPackageManager)(cwd);
@@ -72355,7 +72337,7 @@ function getPreState(_0, _1) {
     if (import_utils7.fs.existsSync(prePath)) {
       import_utils7.fs.removeSync(prePath);
     }
-    if (tools === "modern" /* Modern */) {
+    if (tools === PublishTools.Modern) {
       yield execaWithStreamLog(
         packageManager,
         ["run", "pre", "enter", releaseType],
@@ -72388,14 +72370,14 @@ var pullRequest = () => __async(void 0, null, function* () {
   }
   let releaseVersion = core2.getInput("versionNumber");
   const releaseBranch = core2.getInput("branch");
-  const publishTools = core2.getInput("tools") || "modern" /* Modern */;
+  const publishTools = core2.getInput("tools");
   console.info("[publishTools]:", publishTools);
+  const coreNpmName = core2.getInput("coreNpmName") || "@module-federation/runtime";
+  console.info("[coreNpmName]:", coreNpmName);
   const beforeBumpScript = core2.getInput("beforeBumpScript") || "";
   if (!releaseBranch) {
     throw Error("not found release branch");
   }
-  const repo = process.env.REPOSITORY;
-  const isModernRepo = repo === "web-infra-dev/modern.js";
   const cwd = process.cwd();
   const changesets = yield read_esm_default(cwd);
   if (releaseType === "canary" && releaseVersion === "auto") {
@@ -72419,10 +72401,14 @@ var pullRequest = () => __async(void 0, null, function* () {
     if (releasePlan.releases.length === 0) {
       return;
     }
-    if (isModernRepo) {
-      releaseVersion = `v${releasePlan.releases.filter(
-        (release2) => !release2.name.includes("generator")
-      )[0].newVersion}`;
+    const findCoreNameReleaseInfo = releasePlan.releases.find((release2) => {
+      if (release2.name === coreNpmName) {
+        return true;
+      }
+    });
+    console.info("[findCoreNameReleaseInfo]:", findCoreNameReleaseInfo);
+    if (findCoreNameReleaseInfo) {
+      releaseVersion = `v${findCoreNameReleaseInfo.newVersion}`;
     } else {
       releaseVersion = `v${releasePlan.releases[0].newVersion}`;
     }
@@ -72450,9 +72436,6 @@ var pullRequest = () => __async(void 0, null, function* () {
     return;
   }
   let releaseNote = "";
-  if (publishTools === "modern" /* Modern */) {
-    releaseNote = yield getReleaseNote(githubToken);
-  }
   if (beforeBumpScript) {
     const packageManager = yield (0, import_utils8.getPackageManager)(cwd);
     yield execaWithStreamLog(packageManager, ["run", beforeBumpScript], {
@@ -72461,11 +72444,7 @@ var pullRequest = () => __async(void 0, null, function* () {
   }
   yield runBumpVersion(releaseType, publishTools);
   yield updateLockFile();
-  if (isModernRepo) {
-    yield gitCommitWithIgnore(title, /^test/);
-  } else {
-    yield gitCommitAll(title);
-  }
+  yield gitCommitAll(title);
   yield gitPush(versionBranch, { force: true });
   yield createPullRequest({
     githubToken,
