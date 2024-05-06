@@ -27,7 +27,7 @@ export const release = async () => {
   const npmTag = core.getInput('npmTag');
   let publishBranch = core.getInput('branch');
   const publishTools =
-    (core.getInput('tools') as PublishTools) || PublishTools.Modern; // changeset or modern
+    (core.getInput('tools') as PublishTools); // changeset or modern
   console.info('[publishVersion]:', publishVersion);
   console.info('[publishTools]:', publishTools);
 

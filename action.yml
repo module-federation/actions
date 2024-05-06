@@ -27,7 +27,11 @@ inputs:
   tools:
     description: 'Release Tools'
     required: false
-    default: 'modern'
+    default: 'changeset'
+  coreNpmName:
+    description: 'Core Npm name'
+    required: true
+    default: ''
 branding:
   icon: "package"
   color: "yellow"

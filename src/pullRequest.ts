@@ -37,8 +37,11 @@ export const pullRequest = async () => {
   // 当前发布源分支
   const releaseBranch = core.getInput('branch');
   const publishTools =
-    (core.getInput('tools') as PublishTools) || PublishTools.Modern; // changeset or modern
+    (core.getInput('tools') as PublishTools); // changeset or modern
   console.info('[publishTools]:', publishTools);
+  const coreNpmName = core.getInput('coreNpmName') ||'@module-federation/runtime';
+  console.info('[coreNpmName]:', coreNpmName);
+
   // bump version 前执行的脚本
   // 如 Rspress 在 bump 自身版本前执行 npm run update:modern
   const beforeBumpScript = core.getInput('beforeBumpScript') || '';
@@ -46,10 +49,6 @@ export const pullRequest = async () => {
   if (!releaseBranch) {
     throw Error('not found release branch');
   }
-
-  // hack modern.js repo
-  const repo = process.env.REPOSITORY;
-  const isModernRepo = repo === 'web-infra-dev/modern.js';
 
   const cwd = process.cwd();
 
@@ -82,12 +81,14 @@ export const pullRequest = async () => {
     if (releasePlan.releases.length === 0) {
       return;
     }
-    if (isModernRepo) {
-      releaseVersion = `v${
-        releasePlan.releases.filter(
-          release => !release.name.includes('generator'),
-        )[0].newVersion
-      }`;
+    const findCoreNameReleaseInfo = releasePlan.releases.find((release)=>{
+      if (release.name === coreNpmName) {
+        return true
+      }
+    });
+    console.info('[findCoreNameReleaseInfo]:', findCoreNameReleaseInfo);
+    if (findCoreNameReleaseInfo) {
+      releaseVersion = `v${findCoreNameReleaseInfo.newVersion}`;
     } else {
       releaseVersion = `v${releasePlan.releases[0].newVersion}`;
     }
@@ -129,9 +130,6 @@ export const pullRequest = async () => {
   }
 
   let releaseNote = '';
-  if (publishTools === PublishTools.Modern) {
-    releaseNote = await getReleaseNote(githubToken);
-  }
 
   if (beforeBumpScript) {
     const packageManager = await getPackageManager(cwd);
@@ -145,11 +143,7 @@ export const pullRequest = async () => {
 
   await updateLockFile();
 
-  if (isModernRepo) {
-    await gitCommitWithIgnore(title, /^test/);
-  } else {
-    await gitCommitAll(title);
-  }
+  await gitCommitAll(title);
 
   await gitPush(versionBranch, { force: true });
 
