@@ -57,7 +57,7 @@ jobs:
           fetch-depth: 100
 
       - name: Create Release Pull Request
-        uses: web-infra-dev/actions@main
+        uses: module-federation/actions@main
         with:
           # this expects you to have a script called release which does a build for your packages and calls changeset publish
           version: ${{ github.event.inputs.version }}
