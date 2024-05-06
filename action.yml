@@ -1,5 +1,5 @@
-name: Modern.js Release
-description: Modern.js Release Action
+name: Module Federation Release
+description: Module Federation Release Action
 runs:
   using: "node16"
   main: "dist/index.js"

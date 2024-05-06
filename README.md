@@ -1,8 +1,8 @@
-# Modern.js Actions
+# Module Federation Actions
 
 ## Introduce
 
-This Action containers two actions for [Modern.js](https://modernjs.dev/):
+This Action containers two actions for [Module Federation](https://module-federation.io/):
 
 - Create a pull request with all of the package versions updated and changelogs updated
 
@@ -85,7 +85,7 @@ This action need to set REPO_SCOPED_TOKEN. You can read [Creating a personal acc
 
 #### Outputs
 
-Runtime Modern Release to publish packages to NPM
+Runtime Module Federation Release to publish packages to NPM
 
 #### Example
 
@@ -122,7 +122,7 @@ jobs:
           fetch-depth: 1
 
       - name: Release
-        uses: web-infra-dev/actions@main
+        uses: module-federation/actions@main
         with:
           # this expects you to have a script called release which does a build for your packages and calls changeset publish
           version: ${{ github.event.inputs.version }}
