@@ -70776,7 +70776,7 @@ var createPullRequest = (options) => __async(void 0, null, function* () {
   const repo = `${github.context.repo.owner}/${github.context.repo.repo}`;
   const branch = github.context.ref.replace("refs/heads/", "");
   const octokit = github.getOctokit(githubToken);
-  const searchQuery = `repo:${repo}+state:open+head:${baseBranch}+base:${branch}`;
+  const searchQuery = `repo:${repo}+state:open+head:${baseBranch}+base:${branch}+is:pull-request`;
   const searchResult = yield octokit.rest.search.issuesAndPullRequests({
     q: searchQuery
   });

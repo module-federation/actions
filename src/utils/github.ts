@@ -23,7 +23,8 @@ export const createPullRequest = async (options: CreatePullRequestOptions) => {
   const octokit = github.getOctokit(githubToken);
 
   // 判断当前 Pull Request 是否存在
-  const searchQuery = `repo:${repo}+state:open+head:${baseBranch}+base:${branch}`;
+  // https://docs.github.com/en/rest/search/search?apiVersion=2022-11-28#search-issues-and-pull-requests
+  const searchQuery = `repo:${repo}+state:open+head:${baseBranch}+base:${branch}+is:pull-request`;
   const searchResult = await octokit.rest.search.issuesAndPullRequests({
     q: searchQuery,
   });
